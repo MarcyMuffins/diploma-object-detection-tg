@@ -2,3 +2,4 @@
 runs/
 datasets/
 .idea/
+pyvenv.cfg
