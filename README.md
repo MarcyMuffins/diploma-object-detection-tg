@@ -17,7 +17,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 4. Continue onto individual module instructions
---
+---
 ## Web-server guide:
 
 1. Connect your ESP32-CAM to the programmer board and plug it into your PC
