@@ -52,8 +52,7 @@ python tg_bot.py
 6. Once the bot is running, open it in Telegram to use it
 ---
 ## TODO:
-~~* The TODO~~
-* Add automatic model file scanning by the telegram bot
+* The TODO
 
 ## CREDITS:
 ESP32-CAM server based on a project by [Rui Santos](https://RandomNerdTutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/)
