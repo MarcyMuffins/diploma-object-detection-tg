@@ -29,12 +29,13 @@ pip install -r requirements.txt
 ---
 ## Model trainer guide:
 
-1. Inside the model-training folder, run the following command:
+1. Go to (Roboflow Universe)[https://universe.roboflow.com/] and download your desired dataset in the YOLOv11 format and unzip it in a convenient location. There should be a data.yaml file inside the uzipped folder. 
+2. Inside the model-training folder, run the following command:
 ```
 python ./train.py
 ```
-2. Follow the instructions in the terminal
-3. Copy the best.pt file from the folder outputted in the terminal to a convenient location. This is your model file. You should probably rename it if you plan on using several models in the Telegram bot.
+3. Follow the instructions in the terminal
+4. Copy the best.pt file from the folder outputted in the terminal to a convenient location. This is your model file. You should probably rename it if you plan on using several models in the Telegram bot.
 ---
 ## Telegram bot guide:
 1. Naviagate to the telegram-bot folder
@@ -56,3 +57,4 @@ python tg_bot.py
 
 ## CREDITS:
 ESP32-CAM server based on a project by [Rui Santos](https://RandomNerdTutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/)
+
