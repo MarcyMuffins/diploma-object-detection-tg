@@ -4,7 +4,6 @@ from ultralytics import YOLO
 def main():
     print("=== YOLOv11 Training Interface ===")
 
-    # Get user input
     print("=== Available models ===")
     print("yolo11n.pt: Nano – fastest, lowest accuracy")
     print("yolo11s.pt: Small – balance of speed and accuracy")
@@ -35,15 +34,14 @@ def main():
     print(f"Epochs: {epochs}")
     print(f"Batch size: {batch}\n")
 
-    # Load and train the model
     try:
+        # Model should be automatically downloaded if not present in the running folder
         model = YOLO(model_size)
         results = model.train(data=data_yaml, epochs=epochs, batch=batch)
     except Exception as e:
         print(f"An error occurred during training: {e}")
         return
 
-    # Print summary
     print("\nTraining complete.")
     print(f"Results saved in: {results.save_dir}")
 
