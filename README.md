@@ -46,7 +46,7 @@ TELEGRAM_BOT_TOKEN=[PASTE TOKEN HERE]
 and replace `[PASTE TOKEN HERE]` with your telegram bot token
 4. Run the command:
 ```
-python bot.py
+python tg_bot.py
 ```
 5. Follow the instructions in the terminal
 6. Once the bot is running, open it in Telegram to use it

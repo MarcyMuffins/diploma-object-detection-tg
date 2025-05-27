@@ -6,11 +6,13 @@ import os
 import io
 import urllib.request
 import cv2
+from torchgen.executorch.api.et_cpp import return_type
 from ultralytics import YOLO
 import numpy as np
 from dotenv import load_dotenv
 import asyncio
 import nest_asyncio
+import validators
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -20,6 +22,9 @@ ESP32_IP = "http://192.168.0.104/"
 running = False
 processing_thread = None
 user_chat_id = None
+model_folder = ""
+models = []
+chosen_model = None
 
 # Enable logging
 logging.basicConfig(
@@ -44,7 +49,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"The default settings are:\n"
         f"URL: {ESP32_IP}\n"
         f"Threshold: {THRESHOLD}\n"
-        f"To change the default settings, use /url and /threshold.\n"
+        f"Selected Model: {chosen_model}\n"
+        f"Available Models:\n"
+        f"{'\n'.join(models)}\n"
+        f"To change the default settings, use /url, /threshold and /model.\n"
         f"To start detecting, use /launch, to stop, use /stop.\n"
     )
 
@@ -54,15 +62,21 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"The settings are:\n"
         f"URL: {ESP32_IP}\n"
         f"Threshold: {THRESHOLD}\n"
-        f"To change the default settings, use /url and /threshold.\n"
+        f"Selected Model: {chosen_model}\n"
+        f"Available Models:\n"
+        f"{'\n'.join(models)}\n"
+        f"To change the default settings, use /url, /threshold and /model.\n"
         f"To start detecting, use /launch, to stop, use /stop.\n"
     )
 
 async def url_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global ESP32_IP
     if context.args:
-        ESP32_IP = " ".join(context.args)
-        await update.message.reply_text(f"Global variable updated to: {ESP32_IP}")
+        if validators.url(" ".join(context.args)):
+            ESP32_IP = " ".join(context.args)
+            await update.message.reply_text(f"Global variable updated to: {ESP32_IP}")
+        else:
+            await update.message.reply_text("Usage: /url <text>")
     else:
         await update.message.reply_text("Usage: /url <text>")
 
@@ -80,9 +94,20 @@ async def threshold_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     else:
         await update.message.reply_text("Usage: /threshold <number between 0 and 1>")
 
+async def model_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global models, chosen_model
+    if context.args:
+        if models.count(" ".join(context.args)) > 0:
+            chosen_model = " ".join(context.args)
+            await update.message.reply_text(f"Model updated to: {chosen_model}")
+        else:
+            await update.message.reply_text("Usage: /model <model name>")
+    else:
+        await update.message.reply_text("Usage: /model <model name>")
+
 async def object_detection(bot: Bot):
-    global running, user_chat_id
-    model = YOLO("runs_100s/detect/train/weights/best.pt")
+    global running, user_chat_id, model_folder, chosen_model
+    model = YOLO(model_folder + chosen_model)
     buffer = b""
     while running:
         try:
@@ -150,7 +175,6 @@ async def launch_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     else:
         await update.message.reply_text("Already running!")
 
-
 async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global running
     if running:
@@ -158,7 +182,6 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("Stopping detection...")
     else:
         await update.message.reply_text("Detection is not running.")
-
 
 async def main() -> None:
     """Start the bot."""
@@ -170,6 +193,7 @@ async def main() -> None:
     application.add_handler(CommandHandler("info", info))
     application.add_handler(CommandHandler("url", url_command))
     application.add_handler(CommandHandler("threshold", threshold_command))
+    application.add_handler(CommandHandler("model", model_command))
     application.add_handler(CommandHandler("launch", launch_command))
     application.add_handler(CommandHandler("stop", stop_command))
 
@@ -177,6 +201,22 @@ async def main() -> None:
     await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
+    print("=== Telegram Bot Interface ===")
+
+    model_folder = input("Enter path to the folder containing .pt model files: ").strip()
+    while not os.path.isdir(model_folder):
+        print(f"Folder '{model_folder}' not found or is not a folder. Please try again.")
+        model_folder = input("Enter path to the folder containing .pt model files: ").strip()
+
+    for filename in os.listdir(model_folder):
+        if filename.endswith('.pt'):
+            models.append(filename)
+
+    if len(models) == 0:
+        print("No models detected, closing program.")
+        exit(0)
+
+    chosen_model = models[0]
 
     nest_asyncio.apply()
 

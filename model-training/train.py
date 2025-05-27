@@ -3,7 +3,6 @@ from ultralytics import YOLO
 
 def main():
     print("=== YOLOv11 Training Interface ===")
-    print("This script will train a YOLOv11 model using your specified settings.\n")
 
     # Get user input
     print("=== Available models ===")
