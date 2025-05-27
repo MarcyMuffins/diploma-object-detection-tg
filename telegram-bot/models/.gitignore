@@ -1,4 +1,5 @@
 *.pt
 runs/
+datasets/
 .idea/
 pyvenv.cfg
