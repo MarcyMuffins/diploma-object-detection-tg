@@ -1,19 +1,3 @@
-/*********
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/
-  
-  IMPORTANT!!! 
-   - Select Board "AI Thinker ESP32-CAM"
-   - GPIO 0 must be connected to GND to upload a sketch
-   - After connecting GPIO 0 to GND, press the ESP32-CAM on-board RESET button to put your board in flashing mode
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*********/
-
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "esp_timer.h"
@@ -23,14 +7,19 @@
 #include "soc/soc.h" //disable brownout problems
 #include "soc/rtc_cntl_reg.h"  //disable brownout problems
 #include "esp_http_server.h"
+#include <esp_log.h>
 
 //Replace with your network credentials
-const char* ssid = "";
-const char* password = "B";
+const char* ssid = "ISO_2.4";
+const char* password = "Bella Bella";
 
-#define PART_BOUNDARY "123456789000000000000987654321"
+#define PART_BOUNDARY "OLKSTREAMBOUNDARY"
+static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
+static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
 // This project was tested with the AI Thinker Model
+// TODO: Further camera model support
 #define CAMERA_MODEL_AI_THINKER
 
 #if defined(CAMERA_MODEL_AI_THINKER)
@@ -55,18 +44,21 @@ const char* password = "B";
   #error "Camera model not selected"
 #endif
 
-static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
-static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
-static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
-
+// HTTP Server Instance Handle
 httpd_handle_t stream_httpd = NULL;
 
-static esp_err_t stream_handler(httpd_req_t *req){
+static esp_err_t mjpeg_stream_handler(httpd_req_t *req){
   camera_fb_t * fb = NULL;
   esp_err_t res = ESP_OK;
   size_t _jpg_buf_len = 0;
   uint8_t * _jpg_buf = NULL;
   char * part_buf[64];
+
+  // For debugging, time to send
+  static int64_t last_frame = 0;
+  if(!last_frame) {
+       last_frame = esp_timer_get_time();
+  }
 
   res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
   if(res != ESP_OK){
@@ -78,21 +70,19 @@ static esp_err_t stream_handler(httpd_req_t *req){
     if (!fb) {
       Serial.println("Camera capture failed");
       res = ESP_FAIL;
+      break;
     } else {
-      if(fb->width > 400){
-        if(fb->format != PIXFORMAT_JPEG){
-          bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-          esp_camera_fb_return(fb);
-          fb = NULL;
-          if(!jpeg_converted){
-            Serial.println("JPEG compression failed");
-            res = ESP_FAIL;
-          }
+      if(fb->format != PIXFORMAT_JPEG){
+            bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+            if(!jpeg_converted){
+                Serial.printf("JPEG compression failed");
+                esp_camera_fb_return(fb);
+                res = ESP_FAIL;
+            }
         } else {
-          _jpg_buf_len = fb->len;
-          _jpg_buf = fb->buf;
+            _jpg_buf_len = fb->len;
+            _jpg_buf = fb->buf;
         }
-      }
     }
     if(res == ESP_OK){
       size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
@@ -115,8 +105,15 @@ static esp_err_t stream_handler(httpd_req_t *req){
     if(res != ESP_OK){
       break;
     }
-    //Serial.printf("MJPG: %uB\n",(uint32_t)(_jpg_buf_len));
+    // For debugging, logging stream:
+    int64_t fr_end = esp_timer_get_time();
+    int64_t frame_time = fr_end - last_frame;
+    last_frame = fr_end;
+    frame_time /= 1000;
+    //Serial.printf("MJPG: %uKB %ums (%.1ffps)\n", (uint32_t)(_jpg_buf_len/1024), (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time);
   }
+  // Also remove when debugging
+  last_frame = 0;
   return res;
 }
 
@@ -124,13 +121,15 @@ void startCameraServer(){
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = 80;
 
+  // URI Handler structure
   httpd_uri_t index_uri = {
     .uri       = "/",
     .method    = HTTP_GET,
-    .handler   = stream_handler,
+    .handler   = mjpeg_stream_handler,
     .user_ctx  = NULL
   };
   
+  // Standard way to get the IP is by the serial printout, but I'm using my router
   //Serial.printf("Starting web server on port: '%d'\n", config.server_port);
   if (httpd_start(&stream_httpd, &config) == ESP_OK) {
     httpd_register_uri_handler(stream_httpd, &index_uri);
@@ -138,11 +137,13 @@ void startCameraServer(){
 }
 
 void setup() {
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
- 
-  Serial.begin(115200);
-  Serial.setDebugOutput(false);
+  // Disable brownout detector
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); 
   
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  
+  // Configuring the camera pinout and image format
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -165,6 +166,11 @@ void setup() {
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG; 
   
+  // Extra config for camera quality
+  // Not needed, as  the model I'll be using will run on limited hardware
+  // If for some reason you need a huge ahh frame size and don't care about
+  // the slowdown of the stream, uncomment the block and comment out the 3 lines below it
+
   /*
   if(psramFound()){
     config.frame_size = FRAMESIZE_UXGA;
@@ -189,7 +195,14 @@ void setup() {
 
   // Camera config
   sensor_t * s = esp_camera_sensor_get();
-  s->set_special_effect(s, 2);
+
+  // Grayscale effect to simulate drone footage
+  // Model works without it, need to test accuracy effects
+  //s->set_special_effect(s, 2);
+
+  // Flipping the camera around so it looks properly on my end
+  // Faster to do here than on the server as this is an embedded
+  // function of the ESP32
   s->set_vflip(s, 1);
   s->set_hmirror(s, 1);
 
@@ -202,7 +215,7 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi connected");
   
-  Serial.print("Camera Stream Ready! Go to: http://");
+  Serial.print("Camera stream at http://");
   Serial.print(WiFi.localIP());
   
   // Start streaming web server

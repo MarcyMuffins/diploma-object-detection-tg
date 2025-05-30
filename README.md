@@ -10,22 +10,28 @@ The project consists of three parts:
 ## Prerequisites
 1. Install Python 3.13
 2. Install the Arduino IDE
-3. In the root folder, run the following commands:
+3. In the Arduino IDE, install the `esp32 by Espressif Systems` addon by going to Tools > Board > Boards Manager and searching for `ESP32` in the opened menu
+4. In the root folder, run the following commands:
 ```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-4. Continue onto individual module instructions
+5. Continue onto individual module instructions
 ---
 ## Web-server guide:
 
 1. Connect your ESP32-CAM to the programmer board and plug it into your PC
 2. Open the sketch in the Arduino IDE
-3. Select Board "AI Thinker ESP32-CAM"
-4. Press the ESP32-CAM on-board RESET button to put your board in flashing mode
-5. Upload the sketch to the board
-6. Follow the link in the console readout OR find the ESP32 server in your router's connected devices list
+3. Place your network SSID and Password in the following fields in the code:
+```
+const char* ssid = "";
+const char* password = "";
+```
+4. Select Board "AI Thinker ESP32-CAM"
+5. Press the ESP32-CAM on-board RESET button to put your board in flashing mode
+6. Upload the sketch to the board
+7. Follow the link in the console readout OR find the ESP32 server in your router's connected devices list
 ---
 ## Model trainer guide:
 
@@ -56,5 +62,4 @@ python tg_bot.py
 * The TODO
 
 ## CREDITS:
-ESP32-CAM server based on a project by [Rui Santos](https://RandomNerdTutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/)
-
+ESP32-CAM server based on a project by Rui Santos and Espressif Systems
