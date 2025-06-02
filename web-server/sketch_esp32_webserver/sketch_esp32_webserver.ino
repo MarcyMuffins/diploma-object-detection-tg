@@ -4,14 +4,14 @@
 #include "img_converters.h"
 #include "Arduino.h"
 #include "fb_gfx.h"
-#include "soc/soc.h" //disable brownout problems
-#include "soc/rtc_cntl_reg.h"  //disable brownout problems
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 #include "esp_http_server.h"
 #include <esp_log.h>
 
 //Replace with your network credentials
-const char* ssid = "ISO_2.4";
-const char* password = "Bella Bella";
+const char* ssid = "";
+const char* password = "";
 
 #define PART_BOUNDARY "OLKSTREAMBOUNDARY"
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
@@ -129,8 +129,6 @@ void startCameraServer(){
     .user_ctx  = NULL
   };
   
-  // Standard way to get the IP is by the serial printout, but I'm using my router
-  //Serial.printf("Starting web server on port: '%d'\n", config.server_port);
   if (httpd_start(&stream_httpd, &config) == ESP_OK) {
     httpd_register_uri_handler(stream_httpd, &index_uri);
   }

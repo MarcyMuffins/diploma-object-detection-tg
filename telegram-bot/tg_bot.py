@@ -124,7 +124,7 @@ async def object_detection(bot: Bot):
             buffer = await asyncio.to_thread(lambda: urllib.request.urlopen(ESP32_IP).read(45000))
 
             a = buffer.find(b'\xff\xd8')  # JPEG start
-            b = buffer.find(b'\xff\xd9')  # JPEG end
+            b = buffer.find(b'\xff\xd9', a)  # JPEG end
 
             if a != -1 and b != -1 and b > a:
                 # Cutting out the jpg information from the buffer
