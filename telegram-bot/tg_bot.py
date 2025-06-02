@@ -54,7 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"Threshold: {THRESHOLD}\n"
         f"Selected Model: {chosen_model}\n"
         f"Available Models:\n"
-        f"{'\n'.join(models)}\n"
+        f"{' '.join(models)}\n"
         f"To change the default settings, use /url, /threshold and /model.\n"
         f"To start detecting, use /launch, to stop, use /stop.\n"
     )
@@ -68,7 +68,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"Threshold: {THRESHOLD}\n"
         f"Selected Model: {chosen_model}\n"
         f"Available Models:\n"
-        f"{'\n'.join(models)}\n"
+        f"- {' '.join(models)}\n"
         f"To change the default settings, use /url, /threshold and /model.\n"
         f"To start detecting, use /launch, to stop, use /stop.\n"
     )
